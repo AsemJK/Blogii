@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <IsPackable>true</IsPackable>
+    <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Volo.Abp.Core" Version="8.1.0" />
+    <PackageReference Include="Volo.Abp.AspNetCore.Mvc" Version="8.1.0" />
+    <PackageReference Include="Volo.Abp.AspNetCore.Mvc.UI.Theme.Shared" Version="8.1.0" />
+    <PackageReference Include="Volo.Abp.EntityFrameworkCore" Version="8.1.0" />
+  </ItemGroup>
+  <Target Name="PostBuild" BeforeTargets="PostBuildEvent">
+    <Exec Command="del $(TargetDir)$(TargetName).deps.json" />
+  </Target>
+</Project>

@@ -1,0 +1,159 @@
+﻿@page "/cms/pages"
+@inject IPageService _pageService
+@model MyCmsPlugin.Pages.Cms.PagesModel
+@{
+
+    var pages = _pageService.GetPages();
+}
+
+<div class="container">
+    <div class="my-3">
+        <a href="#" id="btnCreateNewPage" class="btn btn-primary">Create New Page
+            <i class="fa fa-plus"></i>
+        </a>
+    </div>
+    <abp-card>
+        <abp-card-header>
+            <abp-card-title>
+                Pages
+            </abp-card-title>
+        </abp-card-header>
+        <abp-card-body>
+            <table id="dTableCmsPages" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Slug</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+
+        </abp-card-body>
+    </abp-card>
+
+</div>
+<div class="modal fade" id="pageAddEditModal" tabindex="-1" role="dialog" aria-labelledby="pageAddEditModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div>
+                    <ul class="nav nav-tabs" id="create-entity-modal-tabs" role="tablist">
+                        <li class="nav-item"><a aria-controls="create-entity-modal-tabs_0" aria-selected="true" class="nav-link active" data-bs-toggle="tab" href="#create-entity-modal-tabs_0" id="create-entity-modal-tabs_0-tab" role="tab">Entity Info</a></li>
+                        <li class="nav-item"><a aria-controls="create-entity-modal-tabs_1" aria-selected="false" class="nav-link" data-bs-toggle="tab" href="#create-entity-modal-tabs_1" id="create-entity-modal-tabs_1-tab" role="tab">Roles</a></li>
+                        <li class="nav-item"><a aria-controls="create-entity-modal-tabs_2" aria-selected="false" class="nav-link" data-bs-toggle="tab" href="#create-entity-modal-tabs_2" id="create-entity-modal-tabs_2-tab" role="tab">Groups</a></li>
+                    </ul>
+                    <div class="tab-content pt-3" id="create-entity-modal-tabsContent">
+                        <div aria-labelledby="create-entity-modal-tabs_0-tab" class="tab-pane fade show active" id="create-entity-modal-tabs_0" role="tabpanel">
+                            <div>
+                                <form>
+                                    <div class="form-input">
+                                        <label for="txtPageTitle" class="col-form-label-sm">Title</label>
+                                        <input id="txtPageTitle" type="text" class="form-control" onkeydown="GeneratePageSlug()">
+                                    </div>
+                                    <div class="form-input">
+                                        <label for="txtPageSlug" class="col-form-label-sm">Slug</label>
+                                        <input id="txtPageSlug" type="text" class="form-control" disabled>
+                                    </div>
+                                    <div class="form-input">
+                                        <label for="txtPageContent" class="col-form-label-sm">Page Content</label>
+                                        <textarea id="txtPageContent" type="text" class="form-control" rows="3" cols="auto"></textarea>
+                                    </div>
+                                </form>
+
+                            </div>
+                        </div>
+                        <div aria-labelledby="create-entity-modal-tabs_1-tab" class="tab-pane fade" id="create-entity-modal-tabs_1" role="tabpanel">
+                            <div id="entityRoles" class="mt-3">
+                            </div>
+                        </div>
+                        <div aria-labelledby="create-entity-modal-tabs_2-tab" class="tab-pane fade" id="create-entity-modal-tabs_2" role="tabpanel">
+                            <div id="entityUserGroups" class="mt-3">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <input type="hidden" id="hfClassId" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btnEditClass" onclick="SaveChanges()">Save</button>
+                <button type="button" class="btn btn-danger" onclick="CloseModal()" data-dismiss="modal">Close</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <abp-script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js" />
+    <script>
+        $(document).ready(function () {
+            GetPages();
+        });
+        $('#btnCreateNewPage').click(() => {
+            $('#pageAddEditModal').modal('show');
+        });
+
+        async function GetPages() {
+            const response = await fetch("/api/cms/page");
+            const pagesData = await response.json();
+            $('#dTableCmsPages').DataTable({
+                data: pagesData,
+                columns: [
+                    { data: 'title' },
+                    { data: 'slug' },
+                    {
+                        data: null,
+                        render: function (data, type, row) {
+                            return '<a href="#" onclick="EditPage(\'' + row.slug + '\')">Edit</a>';
+                        }
+                    }
+                ],
+                order: [[0, 'asc']]
+            });
+        }
+
+        function GeneratePageSlug() {
+            var slg = $('#txtPageTitle').val().toLowerCase().replace(/ /g, '-');
+            $('#txtPageSlug').val(slg);
+        }
+
+        function CloseModal() {
+            $('#pageAddEditModal').modal('hide');
+        }
+
+        function SaveChanges() {
+            var title = $('#txtPageTitle').val();
+            var slug = $('#txtPageSlug').val();
+            var content = $('#txtPageContent').val();
+            var data = {
+                title: title,
+                slug: slug,
+                content: content
+            };
+            fetch('/api/cms/page', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            }).then(() => {
+                $('#pageAddEditModal').modal('hide');
+            });
+        }
+        function EditPage(slug) {
+            fetch('/api/cms/page/' + slug)
+                .then(response => response.json())
+                .then(data => {
+                    $('#txtPageTitle').val(data.title);
+                    $('#txtPageSlug').val(data.slug);
+                    $('#txtPageContent').val(data.content);
+                    $('#pageAddEditModal').modal('show');
+                });
+        }
+    </script>
+}
