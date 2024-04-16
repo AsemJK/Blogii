@@ -1,14 +1,13 @@
 ﻿@page "/cms/pages"
-@inject IPageService _pageService
 @model MyCmsPlugin.Pages.Cms.PagesModel
 @{
 
-    var pages = _pageService.GetPages();
 }
 
 <div class="container">
     <div class="my-3">
-        <a href="#" id="btnCreateNewPage" class="btn btn-primary">Create New Page
+        <a href="#" id="btnCreateNewPage" class="btn btn-primary">
+            Create New Page
             <i class="fa fa-plus"></i>
         </a>
     </div>
@@ -24,6 +23,7 @@
                     <tr>
                         <th>Title</th>
                         <th>Slug</th>
+                        <th></th>
                         <th></th>
                     </tr>
                 </thead>
@@ -55,7 +55,7 @@
                                     </div>
                                     <div class="form-input">
                                         <label for="txtPageSlug" class="col-form-label-sm">Slug</label>
-                                        <input id="txtPageSlug" type="text" class="form-control" disabled>
+                                        <input id="txtPageSlug" type="text" class="form-control">
                                     </div>
                                     <div class="form-input">
                                         <label for="txtPageContent" class="col-form-label-sm">Page Content</label>
@@ -92,29 +92,50 @@
     <abp-script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js" />
     <script>
         $(document).ready(function () {
+            Clear();
             GetPages();
         });
         $('#btnCreateNewPage').click(() => {
             $('#pageAddEditModal').modal('show');
         });
 
+        function Clear() {
+            $('#txtPageTitle').val('');
+            $('#txtPageSlug').val('');
+            $('#txtPageContent').val('');
+        }
         async function GetPages() {
-            const response = await fetch("/api/cms/page");
-            const pagesData = await response.json();
-            $('#dTableCmsPages').DataTable({
-                data: pagesData,
-                columns: [
-                    { data: 'title' },
-                    { data: 'slug' },
-                    {
-                        data: null,
-                        render: function (data, type, row) {
-                            return '<a href="#" onclick="EditPage(\'' + row.slug + '\')">Edit</a>';
-                        }
-                    }
-                ],
-                order: [[0, 'asc']]
+            if ($.fn.DataTable.isDataTable('#dTableCmsPages'))
+                $('#dTableCmsPages').DataTable().clear().destroy();
+
+            $.ajax({
+                url: '/api/cms/page',
+                type: 'GET',
+                success: function (pagesData) {
+                    $('#dTableCmsPages').DataTable({
+                        data: pagesData,
+                        columns: [
+                            { data: 'title' },
+                            { data: 'slug' },
+                            {
+                                data: null,
+                                render: function (data, type, row) {
+                                    return '<a href="#" onclick="EditPage(\'' + row.slug + '\')"><i class="fa fa-pencil fs-4"></i></a>';
+                                }
+                            },
+                            {
+                                data: null,
+                                render: function (data, type, row) {
+                                    return '<a href="#" onclick="DeletePage(\'' + row.slug + '\')"><i class="fa fa-trash text-danger fs-4"></i></a>';
+                                }
+                            }
+                        ],
+                        order: [[0, 'asc']]
+                    });
+                }
             });
+
+
         }
 
         function GeneratePageSlug() {
@@ -123,6 +144,7 @@
         }
 
         function CloseModal() {
+            Clear();
             $('#pageAddEditModal').modal('hide');
         }
 
@@ -131,29 +153,58 @@
             var slug = $('#txtPageSlug').val();
             var content = $('#txtPageContent').val();
             var data = {
-                title: title,
-                slug: slug,
-                content: content
+                Title: title,
+                Content: content,
+                Slug: slug,
             };
-            fetch('/api/cms/page', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            }).then(() => {
-                $('#pageAddEditModal').modal('hide');
-            });
+            $.ajax(
+                {
+                    url: '/api/cms/page',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function (data) {
+
+                        $('#pageAddEditModal').modal('hide');
+                        abp.notify.success('Your page have been successfully saved!', 'Done');
+                        GetPages();
+                    }
+                });
         }
+
         function EditPage(slug) {
-            fetch('/api/cms/page/' + slug)
-                .then(response => response.json())
-                .then(data => {
+            $.ajax({
+                url: '/api/cms/page/' + slug,
+                type: 'GET',
+                success: function (data) {
                     $('#txtPageTitle').val(data.title);
                     $('#txtPageSlug').val(data.slug);
                     $('#txtPageContent').val(data.content);
                     $('#pageAddEditModal').modal('show');
-                });
+                },
+                error: function (error) {
+                    abp.notify.error(error);
+                }
+            });
+        }
+        function DeletePage(slug) {
+            abp.message.confirm('').then(function (confirm) {
+                if (confirm) {
+                    $.ajax(
+                        {
+                            url: `/api/cms/page/delete/${slug}`,
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: null,
+                            success: function (res) {
+                                console.log(res);
+                                $('#pageAddEditModal').modal('hide');
+                                abp.notify.success('Your page have been successfully deleted!', 'Done');
+                                GetPages();
+                            }
+                        });
+                }
+            });
         }
     </script>
 }

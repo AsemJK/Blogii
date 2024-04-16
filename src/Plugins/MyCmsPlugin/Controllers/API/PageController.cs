@@ -41,17 +41,32 @@ namespace MyCmsPlugin.Controllers.API
         public IActionResult Create(PageModel page)
         {
             var existingPage = _dbContextExtension.Pages.FirstOrDefault(p => p.Slug == page.Slug);
-            if (existingPage != null)
+            if (existingPage == null)
             {
                 _dbContextExtension.Pages.Add(page);
             }
             else
             {
-                _dbContextExtension.Entry(existingPage).CurrentValues.SetValues(page);
+                existingPage.Title = page.Title;
+                existingPage.Content = page.Content;
+
+                _dbContextExtension.Pages.Update(existingPage);
             }
 
             _dbContextExtension.SaveChanges();
             return CreatedAtAction(nameof(Get), new { slug = page.Slug }, page);
+        }
+        [HttpPost("[action]/{slug}")]
+        public IActionResult Delete(string slug)
+        {
+            var page = _dbContextExtension.Pages.FirstOrDefault(p => p.Slug == slug);
+            if (page == null)
+            {
+                return NotFound();
+            }
+            _dbContextExtension.Pages.Remove(page);
+            _dbContextExtension.SaveChanges();
+            return Ok();
         }
     }
 }
