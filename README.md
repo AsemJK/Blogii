@@ -5,11 +5,9 @@
 -   ~~Basic CMS blugin functions~~
 -   ~~Auto plugin migration~~
 -   ~~Add new CMS page~~
--   Edit CMS page
+-   ~~Edit CMS page~~
 -   Using rich text editor instead of teaxtarea
--
-
--
+-   ...
 
 ## About this solution
 
